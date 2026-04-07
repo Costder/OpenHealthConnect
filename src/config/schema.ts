@@ -8,6 +8,7 @@ export const configSchema = z.object({
   host: z.string().default('127.0.0.1'),
   port: z.number().int().min(1).max(65535).default(18432),
   encryptionKeyB64: z.string().min(20),
+  directUploadToken: z.string().min(16),
   hiddenCategoriesByDefault: z.array(categorySchema).default([
     'mental_health',
     'sexual_health',

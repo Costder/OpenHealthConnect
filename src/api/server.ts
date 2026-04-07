@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import type { Database } from 'sqlite';
 import type { AppConfig } from '../config/schema.js';
+import { ingestUploadedBundle } from '../ingest/upload.js';
 import {
   buildHealthStatusResponse,
   buildNutritionListResponse,
@@ -10,7 +11,9 @@ import {
   buildSummaryResponse,
   buildWorkoutListResponse
 } from './bridge.js';
+import { directUploadBodySchema, hasDirectUploadAuth } from './directUpload.js';
 import { applySensitivityPolicy } from '../policy/index.js';
+import { rebuildSummaries } from '../summary/engine.js';
 
 export function buildServer(db: Database, config: AppConfig) {
   const app = Fastify({ logger: false });
@@ -95,6 +98,26 @@ export function buildServer(db: Database, config: AppConfig) {
       ? request.query.limit
       : undefined;
     return buildPrListResponse(db, config, limit);
+  });
+
+  app.post('/v1/direct-upload', async (request, reply) => {
+    const authHeader = typeof request.headers.authorization === 'string' ? request.headers.authorization : undefined;
+    if (!hasDirectUploadAuth(authHeader, config)) {
+      return reply.code(401).send({ error: 'unauthorized' });
+    }
+
+    const body = directUploadBodySchema.parse(request.body);
+    const result = await ingestUploadedBundle(db, config.encryptionKeyB64, body);
+    if (result.ingested) {
+      await rebuildSummaries(db);
+    }
+
+    return {
+      ok: true,
+      ingested: result.ingested,
+      reason: result.reason,
+      bundleId: result.manifest.bundleId
+    };
   });
 
   app.get('/v1/summaries/daily', async () => db.all('SELECT day, summary_json, updated_at FROM summaries_daily ORDER BY day DESC LIMIT 30'));

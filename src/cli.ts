@@ -3,23 +3,39 @@ import fs from 'node:fs';
 import path from 'node:path';
 import sodium from 'libsodium-wrappers-sumo';
 import { loadConfig, defaultConfigTemplate, writeConfig } from './config/index.js';
+import { applyConfigMutation } from './config/mutate.js';
 import { openDb, runMigrations } from './db/index.js';
 import { buildServer } from './api/server.js';
 import { startInboxWatcher } from './watcher/inboxWatcher.js';
 import { ingestBundleDir } from './ingest/pipeline.js';
 import { rebuildSummaries } from './summary/engine.js';
 import { randomKeyB64 } from './utils/crypto.js';
+import { printPairingQr, printSerializedQr, renderDirectPairingQr, renderFolderSyncPairingQr } from './pairing/qr.js';
+import {
+  buildDirectPairingInstructions,
+  buildInitInstructions,
+  buildLegacyPairingInstructions,
+  buildServeInstructions,
+  buildUsage
+} from './cliGuidance.js';
 
 async function cmdInit(baseDir = path.resolve(process.cwd(), '.ohc')): Promise<void> {
   const key = await randomKeyB64();
   fs.mkdirSync(baseDir, { recursive: true });
   fs.mkdirSync(path.join(baseDir, 'inbox'), { recursive: true });
-  const config = defaultConfigTemplate(baseDir, key);
+  const config = await defaultConfigTemplate(baseDir, key);
   writeConfig(config);
   const db = await openDb(config.dbPath);
   await runMigrations(db);
   await db.close();
   console.log('Initialized Open Health Connect at', baseDir);
+  console.log(buildInitInstructions(config));
+  if (process.stdout.isTTY) {
+    console.log('');
+    console.log('Default Android pairing QR (Syncthing)');
+    console.log(buildLegacyPairingInstructions(config, 'syncthing'));
+    printPairingQr(config.encryptionKeyB64, 'syncthing');
+  }
 }
 
 async function cmdServe(): Promise<void> {
@@ -31,6 +47,7 @@ async function cmdServe(): Promise<void> {
   const app = buildServer(db, config);
   await app.listen({ host: config.host, port: config.port });
   console.log(`Serving on http://${config.host}:${config.port}`);
+  console.log(buildServeInstructions(config));
 
   const shutdown = async () => {
     await closeWatcher();
@@ -51,6 +68,36 @@ async function cmdStatus(): Promise<void> {
   await db.close();
 }
 
+async function cmdConfig(args: string[]): Promise<void> {
+  const config = loadConfig();
+
+  if (args[0] === 'show' || args.length === 0) {
+    console.log(JSON.stringify({
+      host: config.host,
+      port: config.port,
+      inboxDir: config.inboxDir,
+      dbPath: config.dbPath,
+      directUploadEnabled: true
+    }, null, 2));
+    return;
+  }
+
+  if (args[0] === 'set') {
+    const key = args[1];
+    const value = args[2];
+    if (!key || !value) {
+      throw new Error('Usage: ohc config set <host|port> <value>');
+    }
+
+    const updated = applyConfigMutation(config, key, value);
+    writeConfig(updated);
+    console.log(JSON.stringify({ key, value: updated[key as 'host' | 'port'] }, null, 2));
+    return;
+  }
+
+  throw new Error('Usage: ohc config show | ohc config set <host|port> <value>');
+}
+
 async function cmdPair(keyB64?: string): Promise<void> {
   await sodium.ready;
   const config = loadConfig();
@@ -58,6 +105,30 @@ async function cmdPair(keyB64?: string): Promise<void> {
   config.encryptionKeyB64 = key;
   writeConfig(config);
   console.log('Pair key updated in config.');
+}
+
+async function cmdPairQr(transportMode?: string): Promise<void> {
+  const config = loadConfig();
+  const selectedTransport = transportMode ?? 'syncthing';
+  console.log(buildLegacyPairingInstructions(config, selectedTransport));
+  printPairingQr(config.encryptionKeyB64, selectedTransport);
+}
+
+async function cmdPairQrFolderSync(transportMode?: string): Promise<void> {
+  const config = loadConfig();
+  const selectedTransport = transportMode ?? 'syncthing';
+  console.log(buildLegacyPairingInstructions(config, selectedTransport));
+  printSerializedQr(renderFolderSyncPairingQr(config.encryptionKeyB64, selectedTransport));
+}
+
+async function cmdPairQrDirect(directHostUrl?: string): Promise<void> {
+  if (!directHostUrl) {
+    throw new Error('Direct pairing requires a reachable host URL, for example: node dist/src/cli.js pair qr direct http://192.168.1.50:18432');
+  }
+
+  const config = loadConfig();
+  console.log(buildDirectPairingInstructions(config, directHostUrl));
+  printSerializedQr(renderDirectPairingQr(config.encryptionKeyB64, directHostUrl, config.directUploadToken));
 }
 
 async function cmdPolicy(args: string[]): Promise<void> {
@@ -109,8 +180,21 @@ async function main(): Promise<void> {
     case 'status':
       await cmdStatus();
       break;
+    case 'config':
+      await cmdConfig(args);
+      break;
     case 'pair':
-      await cmdPair(args[0]);
+      if (args[0] === 'qr') {
+        if (args[1] === 'folder-sync') {
+          await cmdPairQrFolderSync(args[2]);
+        } else if (args[1] === 'direct') {
+          await cmdPairQrDirect(args[2]);
+        } else {
+          await cmdPairQr(args[1]);
+        }
+      } else {
+        await cmdPair(args[0]);
+      }
       break;
     case 'policy':
       await cmdPolicy(args);
@@ -122,7 +206,7 @@ async function main(): Promise<void> {
       await cmdReindex();
       break;
     default:
-      console.log('Usage: ohc <init|serve|status|pair|policy|rescan|reindex>');
+      console.log(buildUsage());
   }
 }
 

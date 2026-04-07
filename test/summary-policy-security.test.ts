@@ -90,6 +90,7 @@ describe('summaries, policy, and api security defaults', () => {
         host: '127.0.0.1',
         port: 18432,
         encryptionKeyB64: 'abc',
+        directUploadToken: 'direct-upload-token-123456',
         hiddenCategoriesByDefault: ['mental_health', 'sexual_health', 'reproductive_health', 'substance_use']
       }
     );
@@ -102,6 +103,7 @@ describe('summaries, policy, and api security defaults', () => {
       host: '127.0.0.1',
       port: 18432,
       encryptionKeyB64: 'abc',
+      directUploadToken: 'direct-upload-token-123456',
       hiddenCategoriesByDefault: ['mental_health', 'sexual_health', 'reproductive_health', 'substance_use']
     });
     const res = await app.inject({ method: 'GET', url: '/v1/context/agent' });

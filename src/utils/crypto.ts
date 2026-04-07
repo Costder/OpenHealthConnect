@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import sodium from 'libsodium-wrappers-sumo';
 
 export function sha256Hex(input: Uint8Array): string {
@@ -42,4 +43,12 @@ export async function encryptPayload(
 export async function randomKeyB64(): Promise<string> {
   await sodium.ready;
   return sodium.to_base64(sodium.randombytes_buf(sodium.crypto_aead_xchacha20poly1305_ietf_KEYBYTES), sodium.base64_variants.ORIGINAL);
+}
+
+export async function randomToken(byteLength = 24): Promise<string> {
+  return randomBytes(byteLength).toString('base64url');
+}
+
+export function randomTokenSync(byteLength = 24): string {
+  return randomBytes(byteLength).toString('base64url');
 }

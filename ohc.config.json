@@ -1,0 +1,15 @@
+{
+  "dataDir": "C:\\Users\\joshua\\OpenHealthConnect\\.ohc",
+  "inboxDir": "C:\\Users\\joshua\\OpenHealthConnect\\.ohc\\inbox",
+  "dbPath": "C:\\Users\\joshua\\OpenHealthConnect\\.ohc\\ohc.sqlite",
+  "host": "0.0.0.0",
+  "port": 18432,
+  "encryptionKeyB64": "SXcOLYLYW6tPg8B1MnBwpeUYFFUe+qdO1IbgYGrNrLc=",
+  "directUploadToken": "fEWFZ2dbg6ghpRV2bIk0ZPG0PfAMM03E",
+  "hiddenCategoriesByDefault": [
+    "mental_health",
+    "sexual_health",
+    "reproductive_health",
+    "substance_use"
+  ]
+}

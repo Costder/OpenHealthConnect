@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { configSchema, type AppConfig } from './schema.js';
+import { randomToken, randomTokenSync } from '../utils/crypto.js';
 
 const defaultConfigPath = path.resolve(process.cwd(), 'ohc.config.json');
 
@@ -10,10 +11,14 @@ export function loadConfig(configPath = defaultConfigPath): AppConfig {
   }
   const raw = fs.readFileSync(configPath, 'utf8');
   const parsed = JSON.parse(raw);
+  if (typeof parsed.directUploadToken !== 'string' || parsed.directUploadToken.length < 16) {
+    parsed.directUploadToken = randomTokenSync();
+    writeConfig(configSchema.parse(parsed), configPath);
+  }
   return configSchema.parse(parsed);
 }
 
-export function defaultConfigTemplate(baseDir: string, encryptionKeyB64: string): AppConfig {
+export async function defaultConfigTemplate(baseDir: string, encryptionKeyB64: string): Promise<AppConfig> {
   return {
     dataDir: baseDir,
     inboxDir: path.join(baseDir, 'inbox'),
@@ -21,6 +26,7 @@ export function defaultConfigTemplate(baseDir: string, encryptionKeyB64: string)
     host: '127.0.0.1',
     port: 18432,
     encryptionKeyB64,
+    directUploadToken: await randomToken(),
     hiddenCategoriesByDefault: ['mental_health', 'sexual_health', 'reproductive_health', 'substance_use']
   };
 }

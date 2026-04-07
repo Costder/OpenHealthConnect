@@ -1,11 +1,19 @@
 import type { Database } from 'sqlite';
-import { eventSchema } from '../types/bundle.js';
+import { eventSchema, type Manifest } from '../types/bundle.js';
 import { decryptPayload } from '../utils/crypto.js';
 import { validateBundle } from './validator.js';
 
 export async function ingestBundleDir(db: Database, bundleDir: string, keyB64: string): Promise<{ ingested: boolean; reason?: string }> {
   const { manifest, ciphertext } = validateBundle(bundleDir);
+  return ingestBundleParts(db, manifest, ciphertext, keyB64);
+}
 
+export async function ingestBundleParts(
+  db: Database,
+  manifest: Manifest,
+  ciphertext: Uint8Array,
+  keyB64: string
+): Promise<{ ingested: boolean; reason?: string }> {
   const existing = await db.get<{ bundle_id: string }>('SELECT bundle_id FROM ingested_bundles WHERE bundle_id = ?', manifest.bundleId);
   if (existing) {
     return { ingested: false, reason: 'already-ingested' };

@@ -18,6 +18,8 @@
 - `src/policy`: category sensitivity filtering
 - `src/api`: Fastify read-only local API
 - `src/watcher`: inbox filesystem watcher using chokidar
+- `src/pairing`: Android pairing payload + terminal QR rendering
+- `src/api/directUpload.ts`: direct device upload auth + request validation
 - `src/cli.ts`: operations workflow (init/serve/status/pair/policy/rescan/reindex)
 
 ## Reliability and safety properties

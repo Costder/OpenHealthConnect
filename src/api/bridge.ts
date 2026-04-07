@@ -113,8 +113,8 @@ function findValueInternal(input: unknown, aliases: Set<string>, depth: number):
   return undefined;
 }
 
-function getNumber(input: unknown, aliases: string[]): number | undefined {
-  const value = findValue(input, aliases);
+function getNumber(input: unknown, aliases: string[], depth = 2): number | undefined {
+  const value = findValue(input, aliases, depth);
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   if (typeof value === 'string') {
     const parsed = Number.parseFloat(value);
@@ -123,15 +123,15 @@ function getNumber(input: unknown, aliases: string[]): number | undefined {
   return undefined;
 }
 
-function getString(input: unknown, aliases: string[]): string | undefined {
-  const value = findValue(input, aliases);
+function getString(input: unknown, aliases: string[], depth = 2): string | undefined {
+  const value = findValue(input, aliases, depth);
   if (typeof value === 'string' && value.trim().length > 0) return value;
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
   return undefined;
 }
 
-function getBoolean(input: unknown, aliases: string[]): boolean | undefined {
-  const value = findValue(input, aliases);
+function getBoolean(input: unknown, aliases: string[], depth = 2): boolean | undefined {
+  const value = findValue(input, aliases, depth);
   if (typeof value === 'boolean') return value;
   if (typeof value === 'string') {
     if (value.toLowerCase() === 'true') return true;
@@ -140,8 +140,8 @@ function getBoolean(input: unknown, aliases: string[]): boolean | undefined {
   return undefined;
 }
 
-function hasAny(input: unknown, aliases: string[]): boolean {
-  return findValue(input, aliases) !== undefined;
+function hasAny(input: unknown, aliases: string[], depth = 2): boolean {
+  return findValue(input, aliases, depth) !== undefined;
 }
 
 function parsePayload(payloadJson: string): Record<string, unknown> {
@@ -192,9 +192,9 @@ function round(value: number, decimals = 2): number {
   return Math.round(value * factor) / factor;
 }
 
-function createNumericField(events: ParsedEvent[], aliases: string[]): NumericField {
+function createNumericField(events: ParsedEvent[], aliases: string[], depth = 2): NumericField {
   for (const event of events) {
-    const value = getNumber(event.payload, aliases);
+    const value = getNumber(event.payload, aliases, depth);
     if (value !== undefined) {
       return {
         value,
@@ -232,8 +232,8 @@ function buildSnapshotView(events: ParsedEvent[], date: string): SnapshotView | 
   if (dayEvents.length === 0) return null;
 
   const upToDayEvents = events.filter((event) => new Date(event.ts) <= endOfDay(date));
-  const weightKg = createNumericField(upToDayEvents, ['weightKg', 'weight']);
-  const heightM = createNumericField(upToDayEvents, ['heightM', 'heightMeters', 'height']);
+  const weightKg = createNumericField(upToDayEvents, ['weightKg', 'weight'], 0);
+  const heightM = createNumericField(upToDayEvents, ['heightM', 'heightMeters', 'height'], 0);
   const stepCount = createSummedField(dayEvents, ['stepCount', 'steps']);
   const sleepHours = createSummedField(dayEvents, ['sleepHours', 'hoursSlept', 'durationHours']);
   const caloriesConsumed = createSummedField(dayEvents, ['caloriesConsumed', 'calories', 'energyKcal']);
