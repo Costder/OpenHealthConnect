@@ -1,6 +1,81 @@
-# OpenHealthConnect
-runs on the user’s computer reads synced bundles from disk or a local service exposes a local API or file interface for OpenClaw  Sync backends  Syncthing backend Nextcloud backend Tailscale backend
+# Open Health Connect
+
+Open Health Connect is a **self-hostable companion service** for the Open Health Android app. It ingests encrypted health data bundles from local/private sync transports, stores them in SQLite, and exposes a local read-only API for agent consumers such as OpenClaw.
+
+## v1 goals
+
+- Single-user, self-hosted architecture
+- SQLite-first (no Postgres)
+- Local-only API by default (`127.0.0.1`)
+- Privacy-first policy filtering (sensitive categories hidden from `/v1` by default)
+- Stable interfaces within v1.x
+- No vendor cloud dependency
+
+## Stack
+
+- TypeScript + Node.js
+- Fastify
+- SQLite (`sqlite3` + `sqlite`)
+- Zod
+- libsodium-wrappers
+- chokidar
+
+## Canonical ingest format (snapshot + delta)
+
+Each bundle is a directory containing:
+
+- `manifest.json`
+- `payload.enc`
+
+Manifest schema (v1):
+
+- `formatVersion: 1`
+- `bundleType: "snapshot" | "delta"`
+- `bundleId: string`
+- `sequence: integer`
+- `prevBundleId?: string`
+- `createdAt: ISO datetime`
+- `transportMode: "syncthing" | "nextcloud" | "tailscale"`
+- `integrity.algorithm: "sha256"`
+- `integrity.ciphertextSha256: hex(64)`
+- `encryption.algorithm: "xchacha20poly1305"`
+- `encryption.nonceB64: base64`
+
+`payload.enc` is XChaCha20-Poly1305 encrypted JSON: `{ "events": Event[] }`.
+
+## CLI
+
+```bash
+ohc init [dataDir]
+ohc serve
+ohc status
+ohc pair [base64key]
+ohc policy show
+ohc policy set <category...>
+ohc rescan
+ohc reindex
+```
+
+## API (read-only)
+
+- `GET /health`
+- `GET /v1/context/agent` (primary endpoint)
+- `GET /v1/events`
+- `GET /v1/summaries/daily`
+- `GET /v1/summaries/weekly`
+
+## Quick start
+
+```bash
+npm install
+npm run build
+node dist/cli.js init
+node dist/cli.js serve
+```
+
+See `docs/transports.md` for transport setup and `docs/architecture.md` for module details.
+
 ## License
 
 Open Health Connect is licensed under the GNU Affero General Public License v3.0.
-See [LICENSE](./LICENSE) for details.
+See [LICENSE](./LICENSE).
