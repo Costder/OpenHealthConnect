@@ -1,0 +1,33 @@
+{
+  "name": "open-health-connect",
+  "version": "1.0.0",
+  "description": "Self-hostable companion service for Open Health Android app",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "bin": {
+    "ohc": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/cli.ts serve",
+    "start": "node dist/cli.js serve",
+    "test": "vitest run",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "chokidar": "^4.0.3",
+    "fastify": "^5.2.1",
+    "libsodium-wrappers": "^0.7.15",
+    "libsodium-wrappers-sumo": "^0.8.2",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/libsodium-wrappers": "^0.7.14",
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
