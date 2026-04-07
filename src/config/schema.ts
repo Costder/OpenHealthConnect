@@ -6,7 +6,7 @@ export const configSchema = z.object({
   inboxDir: z.string().min(1),
   dbPath: z.string().min(1),
   host: z.string().default('127.0.0.1'),
-  port: z.number().int().min(1).max(65535).default(8787),
+  port: z.number().int().min(1).max(65535).default(18432),
   encryptionKeyB64: z.string().min(20),
   hiddenCategoriesByDefault: z.array(categorySchema).default([
     'mental_health',

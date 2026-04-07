@@ -2,6 +2,8 @@
 
 Open Health Connect is a **self-hostable companion service** for the Open Health Android app. It ingests encrypted health data bundles from local/private sync transports, stores them in SQLite, and exposes a local read-only API for agent consumers such as OpenClaw.
 
+The service now also mirrors the current loopback contract used by [`Costder/Openhealth`](https://github.com/Costder/Openhealth/tree/main): it binds to `127.0.0.1:18432` by default and serves `/v1/health`, `/v1/snapshot`, `/v1/summary`, `/v1/workouts`, `/v1/nutrition`, `/v1/recovery`, and `/v1/prs`.
+
 ## v1 goals
 
 - Single-user, self-hosted architecture
@@ -59,8 +61,15 @@ ohc reindex
 ## API (read-only)
 
 - `GET /health`
+- `GET /v1/health`
 - `GET /v1/context/agent` (primary endpoint)
+- `GET /v1/snapshot`
+- `GET /v1/summary`
 - `GET /v1/events`
+- `GET /v1/workouts`
+- `GET /v1/nutrition`
+- `GET /v1/recovery`
+- `GET /v1/prs`
 - `GET /v1/summaries/daily`
 - `GET /v1/summaries/weekly`
 
@@ -69,8 +78,17 @@ ohc reindex
 ```bash
 npm install
 npm run build
-node dist/cli.js init
-node dist/cli.js serve
+npm run init
+node dist/src/cli.js init
+node dist/src/cli.js serve
+```
+
+For the shortest first run on a fresh checkout:
+
+```bash
+npm install
+npm run init
+npm run dev
 ```
 
 See `docs/transports.md` for transport setup and `docs/architecture.md` for module details.

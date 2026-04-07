@@ -5,12 +5,13 @@
   "license": "AGPL-3.0-only",
   "type": "module",
   "bin": {
-    "ohc": "dist/cli.js"
+    "ohc": "dist/src/cli.js"
   },
   "scripts": {
+    "init": "tsx src/cli.ts init",
     "build": "tsc -p tsconfig.json",
     "dev": "tsx src/cli.ts serve",
-    "start": "node dist/cli.js serve",
+    "start": "node dist/src/cli.js serve",
     "test": "vitest run",
     "lint": "tsc -p tsconfig.json --noEmit"
   },
